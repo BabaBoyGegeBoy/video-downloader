@@ -55,8 +55,7 @@ import com.myAllVideoBrowser.ui.main.home.browser.WorkerEventProvider
 import com.myAllVideoBrowser.ui.main.home.browser.adblocker.AdBlockEngine
 import com.myAllVideoBrowser.ui.main.home.browser.detectedVideos.DetectedVideosTabFragment
 import com.myAllVideoBrowser.ui.main.home.browser.detectedVideos.VideoDetectionTabViewModel
-import com.myAllVideoBrowser.ui.main.player.VideoPlayerActivity
-import com.myAllVideoBrowser.ui.main.player.VideoPlayerFragment
+
 import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.AppUtil
 import com.myAllVideoBrowser.util.FileNameCleaner
@@ -208,10 +207,6 @@ class WebTabFragment : BaseWebTabFragment() {
     }
 
     override fun shareWebLink() {
-        val link = webTab.getWebView()?.url
-        if (link != null) {
-            shareLink(link)
-        }
     }
 
     override fun bookmarkCurrentUrl() {
@@ -317,42 +312,7 @@ class WebTabFragment : BaseWebTabFragment() {
         }
     }
 
-    private fun onVideoPreviewPropagate(
-        videoInfo: VideoInfo, format: String, isForce: Boolean
-    ) {
-        AppLogger.d(
-            "onPreviewVideo: ${videoInfo.formats}  $format"
-        )
-        // start your activity by passing the intent
-        startActivity(
-            Intent(
-                requireContext(), VideoPlayerActivity::class.java
-            ).apply {
-                // you can add values(if any) to pass to the next class or avoid using `.apply`
-                val currFormat = videoInfo.formats.allFormats().filter {
-                    it.format?.contains(
-                        format
-                    ) ?: false
-                }
 
-                putExtra(VideoPlayerFragment.VIDEO_NAME, videoInfo.title)
-                if (currFormat.isNotEmpty()) {
-                    val headers = currFormat.first().httpHeaders?.let {
-                        JSONObject(
-                            currFormat.first().httpHeaders ?: emptyMap<String, String>()
-                        ).toString()
-                    } ?: "{}"
-
-                    putExtra(
-                        VideoPlayerFragment.VIDEO_URL, currFormat.first().url
-                    )
-                    val headersFinal = if (isForce) "{}" else headers
-                    putExtra(
-                        VideoPlayerFragment.VIDEO_HEADERS, headersFinal
-                    )
-                }
-            })
-    }
 
     private fun onVideoDownloadPropagate(
         videoInfo: VideoInfo, videoTitle: String, format: String
@@ -801,7 +761,6 @@ class WebTabFragment : BaseWebTabFragment() {
         override fun onPreviewVideo(
             videoInfo: VideoInfo, format: String, isForce: Boolean
         ) {
-            onVideoPreviewPropagate(videoInfo, format, isForce)
         }
 
         override fun onDownloadVideo(

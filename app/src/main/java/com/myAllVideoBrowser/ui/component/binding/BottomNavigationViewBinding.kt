@@ -11,9 +11,7 @@ object BottomNavigationViewBinding {
     fun BottomNavigationView.setSelectedItemId(position: Int) {
         selectedItemId = when (position) {
             0 -> R.id.tab_browser
-            1 -> R.id.tab_progress
-            2 -> R.id.tab_video
-            else -> R.id.tab_video
+            else -> R.id.tab_progress
         }
     }
 }

@@ -23,7 +23,6 @@ import com.myAllVideoBrowser.databinding.ActivityMainBinding
 import com.myAllVideoBrowser.ui.component.adapter.MainAdapter
 import com.myAllVideoBrowser.ui.main.base.BaseActivity
 import com.myAllVideoBrowser.ui.main.progress.ProgressViewModel
-import com.myAllVideoBrowser.ui.main.proxies.ProxiesViewModel
 import com.myAllVideoBrowser.ui.main.settings.SettingsViewModel
 import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.SharedPrefHelper
@@ -47,8 +46,6 @@ class MainActivity : BaseActivity() {
     lateinit var mainViewModel: MainViewModel
 
     lateinit var progressViewModel: ProgressViewModel
-
-    lateinit var proxiesViewModel: ProxiesViewModel
 
     lateinit var settingsViewModel: SettingsViewModel
 
@@ -85,7 +82,6 @@ class MainActivity : BaseActivity() {
 
         mainViewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
         progressViewModel = ViewModelProvider(this, viewModelFactory)[ProgressViewModel::class.java]
-        proxiesViewModel = ViewModelProvider(this, viewModelFactory)[ProxiesViewModel::class.java]
         settingsViewModel = ViewModelProvider(this, viewModelFactory)[SettingsViewModel::class.java]
 
         mainAdapter = MainAdapter(supportFragmentManager, lifecycle, fragmentFactory)
@@ -103,8 +99,7 @@ class MainActivity : BaseActivity() {
                 }
 
                 R.id.tab_progress -> mainViewModel.currentItem.set(1)
-                R.id.tab_video -> mainViewModel.currentItem.set(2)
-                else -> mainViewModel.currentItem.set(3)
+                else -> mainViewModel.currentItem.set(0)
             }
 
             if (isBrowser && goingToBrowser && mainViewModel.isBrowserCurrent.get()) {
@@ -115,7 +110,6 @@ class MainActivity : BaseActivity() {
         dataBinding.viewModel = mainViewModel
 
         grantPermissions()
-        proxiesViewModel.start()
         settingsViewModel.start()
         mainViewModel.start()
         progressViewModel.start()
@@ -154,7 +148,7 @@ class MainActivity : BaseActivity() {
             ) {
                 dataBinding.viewPager.currentItem = 1
             } else {
-                dataBinding.viewPager.currentItem = 2
+                dataBinding.viewPager.currentItem = 1
             }
 
             if (intent.hasExtra(YoutubeDlDownloaderWorker.DOWNLOAD_FILENAME_KEY)) {
@@ -230,12 +224,6 @@ class MainActivity : BaseActivity() {
             settingsViewModel.isLockPortrait.removeOnPropertyChangedCallback(
                 screenOrientationCallback
             )
-            val isNoActiveDownloadsNow = progressViewModel.progressInfos.get()
-                ?.find { it.downloadStatus == VideoTaskState.DOWNLOADING || it.downloadStatus == VideoTaskState.PREPARE || it.downloadStatus == VideoTaskState.PENDING } == null
-            if (isNoActiveDownloadsNow) {
-                AppLogger.d("No active downloads, shutdown local proxy worker...")
-                proxiesViewModel.shutdownProxyWorker()
-            }
             progressViewModel.stop()
         }
         super.onDestroy()

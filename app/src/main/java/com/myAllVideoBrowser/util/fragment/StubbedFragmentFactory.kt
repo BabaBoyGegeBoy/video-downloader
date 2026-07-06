@@ -7,15 +7,8 @@ class StubbedFragmentFactory : FragmentFactory {
 
     override fun createProgressFragment() = Fragment()
 
-    override fun createVideoFragment() = Fragment()
-
-    override fun createSettingsFragment() = Fragment()
-
-    override fun createHistoryFragment() = Fragment()
-
     override fun createBrowserHomeFragment() = Fragment()
 
     override fun createWebTabFragment() = Fragment()
     override fun createDetectedVideosTabFragment() = Fragment()
-    override fun createAdBlockSettingsFragment() = Fragment()
 }

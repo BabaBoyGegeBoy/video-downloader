@@ -12,7 +12,6 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.myAllVideoBrowser.R
 import com.myAllVideoBrowser.data.local.model.Proxy
-import com.myAllVideoBrowser.ui.main.proxies.ProxiesViewModel
 import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.SharedPrefHelper
 import com.myAllVideoBrowser.util.proxy_utils.proxy_manager.ProxyHop
@@ -70,18 +69,7 @@ class ProxyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             emptyList()
         }
 
-        val dnsUrl: String? = if (useDns) {
-            val providerName = sharedPrefHelper.getSelectedDnsProvider()
-            val provider =
-                ProxiesViewModel.SecureDnsProvider.entries.find { it.name == providerName }
-            if (provider == ProxiesViewModel.SecureDnsProvider.CUSTOM) {
-                provider.getCleanUrl(sharedPrefHelper.getCustomDnsUrl())
-            } else {
-                provider?.getCleanUrl()
-            }
-        } else {
-            null
-        }
+        val dnsUrl: String? = null
 
         val localCreds = sharedPrefHelper.getGeneratedCreds()
 

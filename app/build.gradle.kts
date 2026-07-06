@@ -403,7 +403,7 @@ val buildRustAdblock = tasks.register("buildRustAdblock") {
 
     doLast {
         val isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows
-        val executableSuffix = if (isWindows) ".exe" else ""
+        val executableSuffix = if (isWindows) ".cmd" else ""
 
         val toolchainPath = "${ndkPath}/toolchains/llvm/prebuilt/${ndkPrebuiltFolder}/bin"
         val apiLevel = "24"

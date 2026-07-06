@@ -10,13 +10,9 @@ import com.myAllVideoBrowser.ui.main.home.browser.homeTab.BrowserHomeViewModel
 import com.myAllVideoBrowser.ui.main.home.browser.detectedVideos.GlobalVideoDetectionModel
 import com.myAllVideoBrowser.ui.main.home.browser.webTab.WebTabViewModel
 import com.myAllVideoBrowser.ui.main.home.browser.detectedVideos.VideoDetectionTabViewModel
-import com.myAllVideoBrowser.ui.main.player.VideoPlayerViewModel
 import com.myAllVideoBrowser.ui.main.progress.ProgressViewModel
-import com.myAllVideoBrowser.ui.main.proxies.ProxiesViewModel
 import com.myAllVideoBrowser.ui.main.settings.SettingsViewModel
-import com.myAllVideoBrowser.ui.main.settings.adblock.AdBlockSettingsViewModel
 import com.myAllVideoBrowser.ui.main.splash.SplashViewModel
-import com.myAllVideoBrowser.ui.main.video.VideoViewModel
 import com.myAllVideoBrowser.util.ViewModelFactory
 import dagger.Binds
 import dagger.Module
@@ -47,18 +43,8 @@ abstract class ViewModelModule {
 
     @Binds
     @IntoMap
-    @ViewModelKey(VideoPlayerViewModel::class)
-    abstract fun bindVideoPlayerViewModel(viewModel: VideoPlayerViewModel): ViewModel
-
-    @Binds
-    @IntoMap
     @ViewModelKey(ProgressViewModel::class)
     abstract fun bindProgressViewModel(viewModel: ProgressViewModel): ViewModel
-
-    @Binds
-    @IntoMap
-    @ViewModelKey(VideoViewModel::class)
-    abstract fun bindVideoViewModel(viewModel: VideoViewModel): ViewModel
 
     @Binds
     @IntoMap
@@ -69,11 +55,6 @@ abstract class ViewModelModule {
     @IntoMap
     @ViewModelKey(HistoryViewModel::class)
     abstract fun bindHistoryViewModel(viewModel: HistoryViewModel): ViewModel
-
-    @Binds
-    @IntoMap
-    @ViewModelKey(ProxiesViewModel::class)
-    abstract fun bindProxiesViewModel(viewModel: ProxiesViewModel): ViewModel
 
     @Binds
     @IntoMap
@@ -94,9 +75,4 @@ abstract class ViewModelModule {
     @IntoMap
     @ViewModelKey(VideoDetectionTabViewModel::class)
     abstract fun bindVideoDetectionDetectedViewModel(viewModel: VideoDetectionTabViewModel): ViewModel
-
-    @Binds
-    @IntoMap
-    @ViewModelKey(AdBlockSettingsViewModel::class)
-    abstract fun bindAdBlockSettingsViewModel(viewModel: AdBlockSettingsViewModel): ViewModel
 }

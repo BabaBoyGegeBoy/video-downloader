@@ -185,7 +185,6 @@ class BrowserHomeFragment : BaseWebTabFragment() {
     private fun handleFirstStartGuide() {
         if (mainActivity.sharedPrefHelper.getIsFirstStart()) {
             mainActivity.settingsViewModel.setIsFirstStart(false)
-            navigateToHelp()
         }
     }
 
