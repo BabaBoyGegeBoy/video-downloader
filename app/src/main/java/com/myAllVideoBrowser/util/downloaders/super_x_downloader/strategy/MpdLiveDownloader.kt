@@ -308,6 +308,8 @@ class MpdLiveDownloader(
         onProgress: ((percentage: Int) -> Unit)?
     ): FFmpegSession {
         val arguments = mutableListOf<String>()
+        arguments.add("-fflags")
+        arguments.add("+genpts")
 
         if (videoFile.exists() && videoFile.length() > 0) {
             arguments.addAll(listOf("-i", videoFile.absolutePath))
@@ -393,16 +395,7 @@ class MpdLiveDownloader(
                     }
                 }
 
-                if (hasVideo && (videoCodec?.startsWith("hvc1") == true || videoCodec?.startsWith("dvh1") == true)) {
-                    add("-c:v"); add("libx264"); add("-preset"); add("ultrafast"); add("-crf"); add(
-                        "26"
-                    ); add(
-                        "-pix_fmt"
-                    ); add("yuv420p")
-                    if (hasAudio) add("-c:a"); add("copy")
-                } else {
-                    add("-c"); add("copy")
-                }
+                add("-c"); add("copy")
 
                 if (!isSegmentMerge) {
                     add("-bsf:a"); add("aac_adtstoasc")

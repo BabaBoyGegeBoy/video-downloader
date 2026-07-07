@@ -5,15 +5,12 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
-import com.myAllVideoBrowser.data.repository.AdBlockRepository
 import com.myAllVideoBrowser.di.component.DaggerAppComponent
-import com.myAllVideoBrowser.ui.main.home.browser.adblocker.AdBlockEngine
 import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.ContextUtils
 import com.myAllVideoBrowser.util.FileUtil
 import com.myAllVideoBrowser.util.SharedPrefHelper
 import com.myAllVideoBrowser.util.downloaders.generic_downloader.DaggerWorkerFactory
-import com.myAllVideoBrowser.util.proxy_utils.ProxyWorker
 import com.tencent.mmkv.MMKV
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
@@ -44,12 +41,6 @@ open class DLApplication : DaggerApplication(), Configuration.Provider {
 
     @Inject
     lateinit var fileUtil: FileUtil
-
-    @Inject
-    lateinit var adBlockRepository: AdBlockRepository
-
-    @Inject
-    lateinit var adBlockEngine: AdBlockEngine
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -104,19 +95,6 @@ open class DLApplication : DaggerApplication(), Configuration.Provider {
 
             initializeYoutubeDl()
             updateYoutubeDL()
-
-            startProxyWorker()
-
-            adblockInit()
-        }
-    }
-
-    suspend fun adblockInit() {
-        adBlockRepository.checkAndPrepopulateDefaults()
-        val isAdOn = sharedPrefHelper.getIsAdBlockOn()
-        if (isAdOn) {
-            adBlockRepository.downloadEnabledLists()
-            adBlockEngine.loadRules()
         }
     }
 
@@ -146,27 +124,5 @@ open class DLApplication : DaggerApplication(), Configuration.Provider {
         } catch (e: Throwable) {
             e.printStackTrace()
         }
-    }
-
-    fun startProxyWorker() {
-        val isProxyOn = sharedPrefHelper.getIsProxyOn()
-        val isDohOn = sharedPrefHelper.getIsDohOn()
-        if (!(isProxyOn || isDohOn)) {
-            AppLogger.i("Proxy not enabled in settings, skipping WorkManager enqueue")
-            WorkManager.getInstance(this).cancelUniqueWork(ProxyWorker.WORK_NAME)
-            return
-        }
-
-        AppLogger.i("Enqueuing ProxyWorker...")
-
-        val workRequest = OneTimeWorkRequestBuilder<ProxyWorker>()
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniqueWork(
-            ProxyWorker.WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
     }
 }

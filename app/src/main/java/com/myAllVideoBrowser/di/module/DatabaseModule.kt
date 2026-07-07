@@ -133,6 +133,12 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
     }
 }
 
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS `adblock_lists`")
+    }
+}
+
 @Module
 class DatabaseModule {
 
@@ -151,7 +157,8 @@ class DatabaseModule {
             MIGRATION_9_10,
             MIGRATION_10_11,
             MIGRATION_11_12,
-            MIGRATION_12_13
+            MIGRATION_12_13,
+            MIGRATION_13_14
         ).build()
     }
 
@@ -174,8 +181,4 @@ class DatabaseModule {
     @Singleton
     @Provides
     fun providePageDao(database: AppDatabase): PageDao = database.pageDao()
-
-    @Singleton
-    @Provides
-    fun provideAdBlockDao(database: AppDatabase): AdBlockDao = database.adBlockDao()
 }

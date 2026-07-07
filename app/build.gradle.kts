@@ -49,15 +49,15 @@ val abiFilterProperty = abiFilterRaw
     .filter { it.isNotBlank() }
 
 println("ABI_FILTERS: $abiFilterProperty")
-val isSingleAbiRequested = abiFilterProperty.size == 1
+val activeFilters = abiFilterProperty.ifEmpty {
+    listOf("arm64-v8a")
+}
+
+val isSingleAbiRequested = activeFilters.size == 1
 
 val splitApksEnv = System.getenv("SPLITS_INCLUDE")?.lowercase()?.toBoolean() ?: true
 
 val splitApks = if (isSingleAbiRequested) false else splitApksEnv
-
-val activeFilters = abiFilterProperty.ifEmpty {
-    listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-}
 
 println("Mode::: SingleAbi=$isSingleAbiRequested, SplitApks=$splitApks, Filters=$abiFilterProperty")
 
@@ -149,7 +149,7 @@ android {
             }
             ndk {
                 abiFilters.clear()
-                abiFilters.addAll(abiFilterProperty)
+                abiFilters.addAll(activeFilters)
             }
         } else if (splitApks) {
             splits {
@@ -224,7 +224,7 @@ android {
                         it.filterType == FilterConfiguration.FilterType.ABI
                     }?.identifier
                 } else if (isSingleAbiRequested) {
-                    abiFilterProperty[0]
+                    activeFilters[0]
                 } else {
                     null
                 }
@@ -254,7 +254,7 @@ android {
         if (isSingleAbiRequested) {
             outputs.all {
                 val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-                val abiName = abiFilterProperty[0]
+                val abiName = activeFilters[0]
                 // This generates: app-arm64-v8a-release-unsigned.apk
                 output.outputFileName = "app-$abiName-${variant.name}-unsigned.apk"
                 println("⚙️ F-Droid APK Rename: ${output.outputFileName}")
@@ -353,7 +353,6 @@ dependencies {
     // Utilities
     implementation(libs.kotlinxSerializationJson)
     implementation(libs.kotlinxSerializationCore)
-    implementation(libs.jsoup)
     implementation(libs.timeago)
 
     // Desugar for Java 8+ APIs
@@ -390,382 +389,3 @@ tasks.named("coveralls") {
     onlyIf { System.getenv("COVERALLS_REPO_TOKEN") != null }
 }
 
-// =========================================================================
-// RUST ADBLOCK BUILD SETUP (Multi-Architecture)
-// =========================================================================
-val rustProjectDir = file("${project.rootDir}/rust_adblock")
-
-val jniLibsDir = file("src/main/jniLibs")
-
-val buildRustAdblock = tasks.register("buildRustAdblock") {
-    group = "Rust Build"
-    description = "Compiles Rust Adblock library for all Android targets"
-
-    doLast {
-        val isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows
-        val executableSuffix = if (isWindows) ".cmd" else ""
-
-        val toolchainPath = "${ndkPath}/toolchains/llvm/prebuilt/${ndkPrebuiltFolder}/bin"
-        val apiLevel = "24"
-
-        val targetsToBuild = archConfigs.filter { it.abi in activeFilters }
-
-        if (targetsToBuild.isEmpty() && abiFilterProperty.isNotEmpty()) {
-            throw GradleException("Requested ABI_FILTERS ($activeFilters) not found in archConfigs")
-        }
-
-        targetsToBuild.forEach { arch ->
-            println("🦀 Compiling Rust specifically for ${arch.abi}...")
-
-            val linkerBinary = if (arch.abi == "armeabi-v7a") {
-                "armv7a-linux-androideabi$apiLevel-clang$executableSuffix"
-            } else {
-                "${arch.target}$apiLevel-clang$executableSuffix"
-            }
-
-            val linkerPath = "$toolchainPath/$linkerBinary"
-
-            if (!file(linkerPath).exists()) {
-                throw GradleException("✗ Rust Linker not found at: $linkerPath")
-            }
-
-            execOps.exec {
-                workingDir = rustProjectDir
-
-                val cargoCmd: String
-                val cargoBinDir: String?
-                if (isWindows) {
-                    cargoBinDir = "${System.getenv("USERPROFILE")}\\.cargo\\bin"
-                    cargoCmd = "$cargoBinDir\\cargo.exe"
-                } else {
-                    val homeCargoBin = "${System.getenv("HOME")}/.cargo/bin"
-                    cargoBinDir = if (file("$homeCargoBin/cargo").exists()) homeCargoBin else null
-                    cargoCmd = if (cargoBinDir != null) "$cargoBinDir/cargo" else "cargo"
-                }
-
-                val pathSeparator = if (isWindows) ";" else ":"
-                val currentPath = System.getenv("PATH") ?: ""
-                val newPath = if (cargoBinDir != null) {
-                    "$cargoBinDir$pathSeparator$toolchainPath$pathSeparator$currentPath"
-                } else {
-                    "$toolchainPath$pathSeparator$currentPath"
-                }
-
-                environment("PATH", newPath)
-
-                val targetEnvVar =
-                    "CARGO_TARGET_${arch.rustTarget.replace("-", "_").uppercase()}_LINKER"
-                environment(targetEnvVar, linkerPath)
-
-                environment("CC", linkerPath)
-                environment("CXX", linkerPath.replace("clang", "clang++"))
-
-                val rustFlags = listOf(
-                    "-C link-arg=-z",
-                    "-C link-arg=max-page-size=16384",
-                    "--remap-path-prefix=${rustProjectDir.absolutePath}=/rust_build"
-                ).joinToString(" ")
-
-                environment("RUSTFLAGS", rustFlags)
-
-                commandLine(
-                    cargoCmd,
-                    "build",
-                    "--target",
-                    arch.rustTarget,
-                    "--release"
-                )
-            }
-
-            // Copy the compiled .so to jniLibs
-            val soName = "libadblock_rust_jni.so"
-            val sourceSo = file("$rustProjectDir/target/${arch.rustTarget}/release/$soName")
-
-            // src/main/jniLibs/arm64-v8a
-            val abiDestDir = File(jniLibsDir, arch.abi)
-
-            if (sourceSo.exists()) {
-                abiDestDir.mkdirs()
-
-                // Copy to src/main/jniLibs/[ABI]/libadblock_rust_jni.so
-                sourceSo.copyTo(File(abiDestDir, soName), overwrite = true)
-                println("✓ Copied ${arch.abi} Adblock binary to ${abiDestDir.absolutePath}")
-            } else {
-                throw GradleException("✗ Rust build failed to produce $soName for ${arch.abi}")
-            }
-        }
-    }
-}
-
-// =========================================================================
-// GO REPRODUCIBLE BUILD SETUP (Multi-Architecture)
-// =========================================================================
-val execOps = project.serviceOf<ExecOperations>()
-
-// V2Ray Repository Configuration
-val v2rayRepo = "https://github.com/2dust/AndroidLibXrayLite.git"
-val v2rayCommit = "d783dc8ea75afa0ff8fc9dcd51a426a9a67f6a70"
-val buildDirV2ray = file("${project.rootDir}/build/v2ray")
-
-// Go Executable Detection
-val goExecutable = run {
-    val envOverride = System.getenv("GO_EXECUTABLE")
-    if (envOverride != null && file(envOverride).exists()) return@run envOverride
-
-    val propOverride = project.findProperty("GO_EXECUTABLE")?.toString()
-    if (propOverride != null && file(propOverride).exists()) return@run propOverride
-
-    val candidates = listOf(
-        "/opt/go-bin/go",
-        "/opt/homebrew/bin/go",
-        "/usr/local/go/bin/go",
-        "/usr/local/bin/go",
-        "/usr/bin/go"
-    )
-    candidates.find { file(it).exists() } ?: "go"
-}
-
-// Git Executable Detection
-val gitExecutable = if (file("/usr/bin/git").exists()) "/usr/bin/git" else "git"
-
-// =========================================================================
-// NDK PATH DETECTION & VALIDATION
-// =========================================================================
-
-fun findNdkPath(): String {
-    val envVar = System.getenv("ANDROID_NDK_HOME") ?: System.getenv("ANDROID_NDK_ROOT")
-    if (!envVar.isNullOrEmpty()) {
-        println("✓ Found NDK path in environment variable: $envVar")
-        return envVar
-    }
-
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        val properties = Properties()
-        localPropertiesFile.inputStream().use { properties.load(it) }
-        val propVar = properties.getProperty("ndk.dir")
-        if (propVar != null) {
-            println("✓ Found NDK path in local.properties: $propVar")
-            return propVar
-        }
-    }
-
-    throw GradleException(
-        "✗ NDK path not found. Please define one of:\n" +
-                "  1. Environment: ANDROID_NDK_HOME or ANDROID_NDK_ROOT\n" +
-                "  2. Property: ndk.dir in local.properties"
-    )
-}
-
-fun validateNdkPath(ndkPath: String): String {
-    val prebuiltToolchainsDir = file("${ndkPath}/toolchains/llvm/prebuilt")
-
-    if (!prebuiltToolchainsDir.exists()) {
-        throw GradleException(
-            "✗ NDK toolchains prebuilt directory not found at: ${prebuiltToolchainsDir}\n" +
-                    "  Verify your NDK installation and configuration."
-        )
-    }
-
-    val prebuiltChildren =
-        prebuiltToolchainsDir.listFiles()?.filter { it.isDirectory } ?: emptyList()
-    if (prebuiltChildren.isEmpty()) {
-        throw GradleException("✗ No prebuilt toolchain directory found under ${prebuiltToolchainsDir}")
-    }
-
-    val ndkPrebuiltFolder =
-        (prebuiltChildren.find { it.name.contains("darwin") } ?: prebuiltChildren[0]).name
-    println("✓ Using NDK prebuilt folder: $ndkPrebuiltFolder")
-    return ndkPrebuiltFolder
-}
-
-val ndkPath = findNdkPath()
-val ndkPrebuiltFolder = validateNdkPath(ndkPath)
-
-// =========================================================================
-// ARCHITECTURE CONFIGURATIONS
-// =========================================================================
-
-data class ArchConfig(
-    val abi: String,
-    val goArch: String,
-    val target: String,
-    val rustTarget: String
-)
-
-val archConfigs = listOf(
-    ArchConfig("arm64-v8a", "arm64", "aarch64-linux-android", "aarch64-linux-android"),
-    ArchConfig("armeabi-v7a", "arm", "armv7a-linux-androideabi", "armv7-linux-androideabi"),
-    ArchConfig("x86_64", "amd64", "x86_64-linux-android", "x86_64-linux-android"),
-    ArchConfig("x86", "386", "i686-linux-android", "i686-linux-android")
-)
-
-// =========================================================================
-// GO BUILD HELPER FUNCTIONS
-// =========================================================================
-
-fun verifyGoExecutable(builderDir: File, executablePath: String) {
-    try {
-        execOps.exec {
-            workingDir(builderDir)
-            commandLine(executablePath, "version")
-        }
-    } catch (e: Throwable) {
-        throw GradleException(
-            "✗ Go executable not found or failed to run at: $executablePath\n" +
-                    "  Install Go or set:\n" +
-                    "  - Environment: GO_EXECUTABLE=/path/to/go\n" +
-                    "  - Property: -PGO_EXECUTABLE=/path/to/go\n" +
-                    "  Error: ${e.message}"
-        )
-    }
-}
-
-// =========================================================================
-// GO BUILD TASKS
-// =========================================================================
-
-// verify the submodule and vendor exist
-tasks.register<DefaultTask>("verifyOfflineSources") {
-    group = "Go Setup"
-    val v2raySrc = file("${project.rootDir}/v2ray-src")
-    val vendorDir = file("${project.rootDir}/app/src/main/go/builder/vendor")
-
-    doLast {
-        if (!v2raySrc.exists() || v2raySrc.listFiles()?.isEmpty() == true) {
-            throw GradleException("✗ V2Ray submodule missing. Run: git submodule update --init --recursive")
-        }
-        if (!vendorDir.exists()) {
-            throw GradleException("✗ Vendor directory missing. Run 'go mod vendor' locally and commit it.")
-        }
-        println("✓ Offline sources verified for F-Droid compliance.")
-    }
-}
-
-val prepareGoBuild = tasks.register("prepareGoBuild") {
-    dependsOn(tasks.named("verifyOfflineSources"))
-}
-
-val copyAllGoSharedLibs = tasks.register("copyAllGoSharedLibs") {
-    group = "Go Build"
-    description = "Copies Go shared libraries for all architectures to jniLibs."
-}
-
-// =========================================================================
-// GENERATE ARCHITECTURE-SPECIFIC BUILD & COPY TASKS
-// =========================================================================
-
-val goTargets = archConfigs.filter { it.abi in activeFilters }
-
-goTargets.forEach { arch ->
-    // Build task for current architecture
-    val buildTask = tasks.register<Exec>("buildGoSharedLib_${arch.abi}") {
-        dependsOn(prepareGoBuild)
-        group = "Go Build"
-        description = "Builds Go shared library (${arch.abi})"
-
-        val builderDir = file("src/main/go/builder")
-        val outputDir = file("${layout.buildDirectory.get().asFile}/generated/go_build/${arch.abi}")
-        val outputSO = file("${outputDir}/libgojni.so")
-
-        inputs.dir(builderDir)
-        outputs.file(outputSO)
-        workingDir(builderDir)
-
-        val apiLevel = 21
-        val toolchainPath = "${ndkPath}/toolchains/llvm/prebuilt/${ndkPrebuiltFolder}"
-        val compiler = "${toolchainPath}/bin/${arch.target}${apiLevel}-clang"
-        val sysroot = "${toolchainPath}/sysroot"
-
-        environment("CGO_ENABLED", "1")
-        environment("GOOS", "android")
-        environment("GOARCH", arch.goArch)
-        environment("CC", compiler)
-        environment("CGO_CFLAGS", "--sysroot=${sysroot}")
-
-        val v2rayLibPath = "${project.rootDir}/v2ray-src/libs"
-        environment(
-            "CGO_LDFLAGS",
-            "--sysroot=${sysroot} -llog -Wl,-z,max-page-size=16384 -L$v2rayLibPath"
-        )
-
-        doFirst {
-            println("\n>>> Building Go library for ${arch.abi}...")
-            if (!file(compiler).exists()) {
-                throw GradleException(
-                    "✗ C compiler for ${arch.abi} not found at: $compiler\n" +
-                            "  Verify NDK installation and configuration."
-                )
-            }
-        }
-
-        doLast {
-            println("✓ Built ${arch.abi}")
-        }
-
-        commandLine(
-            goExecutable, "build",
-            "-mod=vendor",
-            "-buildmode=c-shared",
-            "-trimpath",
-            "-ldflags", "-s -w -buildid=",
-            "-o", outputSO.absolutePath,
-            "."
-        )
-    }
-
-    // Copy task for current architecture
-    val copyTask = tasks.register<Copy>("copyGoSharedLib_${arch.abi}") {
-        dependsOn(buildTask)
-        group = "Go Build"
-        description = "Copies Go library to jniLibs (${arch.abi})"
-
-        from(buildTask.map { it.outputs.files })
-        into("src/main/jniLibs/${arch.abi}")
-
-        doFirst {
-            val sourceFile = buildTask.get().outputs.files.singleFile
-            if (!sourceFile.exists()) {
-                throw InvalidUserDataException(
-                    "✗ Go build failed: ${sourceFile.path} not created for ${arch.abi}"
-                )
-            }
-            println(">>> Copying library to jniLibs (${arch.abi})...")
-        }
-
-        doLast {
-            println("✓ Copied ${arch.abi}")
-        }
-    }
-
-    // Add copy task to aggregator
-    copyAllGoSharedLibs.configure {
-        dependsOn(copyTask)
-    }
-}
-
-// =========================================================================
-// BUILD LIFECYCLE HOOKS
-// =========================================================================
-
-// Hook Go build into Android build lifecycle
-project.afterEvaluate {
-    tasks.named("preBuild") {
-        dependsOn(copyAllGoSharedLibs)
-        dependsOn(buildRustAdblock)
-    }
-
-    // Add summary task for all Go builds
-    tasks.register("buildAllGoLibraries") {
-        group = "Go Build"
-        description = "Builds and copies all Go shared libraries"
-        dependsOn(copyAllGoSharedLibs)
-
-        doLast {
-            println("\n╔════════════════════════════════════════════════════════╗")
-            println("║  ✓ ALL GO LIBRARIES BUILT SUCCESSFULLY                 ║")
-            println("║  Ready for Android APK build                           ║")
-            println("╚════════════════════════════════════════════════════════╝\n")
-        }
-    }
-}

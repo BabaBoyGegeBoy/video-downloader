@@ -4,13 +4,11 @@ import android.content.Context
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
-import com.myAllVideoBrowser.data.local.room.dao.AdBlockDao
 import com.myAllVideoBrowser.data.remote.service.ConfigService
 import com.myAllVideoBrowser.data.remote.service.VideoService
 import com.myAllVideoBrowser.data.remote.service.VideoServiceSuperX
 import com.myAllVideoBrowser.data.remote.service.VideoServiceLocal
 import com.myAllVideoBrowser.di.qualifier.ApplicationContext
-import com.myAllVideoBrowser.ui.main.home.browser.adblocker.AdBlockEngine
 import com.myAllVideoBrowser.util.FileUtil
 import com.myAllVideoBrowser.util.ProxyRetryInterceptor
 import com.myAllVideoBrowser.util.proxy_utils.CustomProxyController
@@ -77,12 +75,4 @@ class NetworkModule {
         return PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(context))
     }
 
-    @Singleton
-    @Provides
-    fun provideAdblockerEngine(
-        @ApplicationContext context: Context,
-        adBlockDao: AdBlockDao
-    ): AdBlockEngine {
-        return AdBlockEngine(context, adBlockDao)
-    }
 }
