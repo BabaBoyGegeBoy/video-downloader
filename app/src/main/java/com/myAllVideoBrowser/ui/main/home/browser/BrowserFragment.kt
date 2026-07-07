@@ -47,8 +47,7 @@ import com.myAllVideoBrowser.ui.main.home.browser.webTab.WebTabFragment
 import com.myAllVideoBrowser.ui.main.progress.WrapContentLinearLayoutManager
 import com.myAllVideoBrowser.ui.main.settings.SettingsViewModel
 import com.myAllVideoBrowser.util.*
-import com.myAllVideoBrowser.util.proxy_utils.CustomProxyController
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
+import okhttp3.OkHttpClient
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -131,13 +130,10 @@ class BrowserFragment : BaseFragment(), BrowserServicesProvider {
     lateinit var appUtil: AppUtil
 
     @Inject
-    lateinit var proxyController: CustomProxyController
-
-    @Inject
     lateinit var sharedPrefHelper: SharedPrefHelper
 
     @Inject
-    lateinit var okHttpProxyClient: OkHttpProxyClient
+    lateinit var okHttpClient: OkHttpClient
 
     @VisibleForTesting
     internal lateinit var dataBinding: FragmentBrowserBinding
@@ -192,7 +188,7 @@ class BrowserFragment : BaseFragment(), BrowserServicesProvider {
                 }
 
                 val contentType = VideoUtils.getContentTypeByUrl(
-                    url, requestWithCookies?.headers, okHttpProxyClient
+                    url, requestWithCookies?.headers, okHttpClient
                 )
 
                 if (contentType == ContentType.MPD || contentType == ContentType.M3U8 || url.contains(

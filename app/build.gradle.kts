@@ -279,7 +279,6 @@ dependencies {
     implementation(libs.webkit)
     implementation(libs.coreKtx)
     implementation(libs.coreSplashscreen)
-    implementation(libs.legacySupportV4)
 
     // should fix ssl crashes on old devices
     implementation(libs.conscrypt.android)
@@ -290,7 +289,6 @@ dependencies {
     // Coroutines & Work Manager
     implementation(libs.workRuntimeKtx)
     implementation(libs.workRxjava3)
-    implementation(libs.workMultiprocess)
     implementation(libs.fragmentKtx)
     implementation(libs.concurrentFuturesKtx)
 
@@ -304,7 +302,6 @@ dependencies {
     implementation(libs.roomRuntime)
     implementation(libs.roomKtx)
     implementation(libs.roomRxjava3)
-    implementation(libs.roomGuava)
     ksp(libs.roomCompiler)
 
     // Key value DB

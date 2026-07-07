@@ -447,19 +447,7 @@ class YoutubeDlDownloaderWorker(appContext: Context, workerParams: WorkerParamet
             request.addOption("--continue")
         }
 
-//        $youtube-dl --proxy http://user:password@your_proxy.com:port url
-        val currentProxy = proxyController.getCurrentRunningProxy()
-        if (currentProxy != Proxy.noProxy()) {
-            val (user, password) = proxyController.getProxyCredentials()
-            if (user.isNotEmpty() && password.isNotEmpty()) {
-                request.addOption(
-                    "--proxy",
-                    "http://${user}:${password}@${currentProxy.host}:${currentProxy.port}"
-                )
-            } else {
-                request.addOption("--proxy", "${currentProxy.host}:${currentProxy.port}")
-            }
-        }
+
 
         request.addOption("-o", "${tmpFile.absolutePath}/${fileName}.%(ext)s")
 

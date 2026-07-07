@@ -25,7 +25,6 @@ import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.ContextUtils
 import com.myAllVideoBrowser.util.CookieUtils
 import com.myAllVideoBrowser.util.SingleLiveEvent
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import com.myAllVideoBrowser.util.scheduler.BaseSchedulers
 import io.reactivex.rxjava3.disposables.Disposable
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +32,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import okhttp3.Headers.Companion.toHeaders
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.net.HttpCookie
 import java.net.URL
@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap
 open class VideoDetectionTabViewModel @Inject constructor(
     private val videoRepository: VideoRepository,
     private val baseSchedulers: BaseSchedulers,
-    private val okHttpProxyClient: OkHttpProxyClient,
+    private val okHttpClient: OkHttpClient,
 ) : BaseViewModel(), IVideoDetector {
     // key: videoInfo.id, value: format - string
     val selectedFormats = ObservableField<Map<String, String>>()
@@ -521,7 +521,7 @@ open class VideoDetectionTabViewModel @Inject constructor(
             val request =
                 Request.Builder().url(finalUrlPair.first).headers(headers.toHeaders()).build()
 
-            okHttpProxyClient.getProxyOkHttpClient().newCall(request).execute().use { response ->
+            okHttpClient.newCall(request).execute().use { response ->
                 val contentType = response.body.contentType().toString()
                 val contentLength = response.body.contentLength()
 
@@ -578,7 +578,7 @@ open class VideoDetectionTabViewModel @Inject constructor(
 
         runCatching {
             val request = Request.Builder().url(finalUrlPairEmpty.first).build()
-            okHttpProxyClient.getProxyOkHttpClient().newCall(request).execute().use { response ->
+            okHttpClient.newCall(request).execute().use { response ->
                 val contentType = response.body.contentType().toString()
                 val contentLength = response.body.contentLength()
 

@@ -4,11 +4,11 @@ import com.myAllVideoBrowser.data.local.room.entity.PageInfo
 import com.myAllVideoBrowser.di.qualifier.LocalData
 import com.myAllVideoBrowser.di.qualifier.RemoteData
 import com.myAllVideoBrowser.util.FaviconUtils
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import okhttp3.OkHttpClient
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,7 +27,7 @@ interface TopPagesRepository {
 @Singleton
 class TopPagesRepositoryImpl @Inject constructor(
     @param:LocalData private val localDataSource: TopPagesRepository,
-    private val okHttpClient: OkHttpProxyClient
+    private val okHttpClient: OkHttpClient
 ) : TopPagesRepository {
 
     override suspend fun getTopPages(): List<PageInfo> {
@@ -53,7 +53,7 @@ class TopPagesRepositoryImpl @Inject constructor(
             if (page.faviconBitmap() == null) {
                 val bitmap = try {
                     FaviconUtils.getEncodedFaviconFromUrl(
-                        okHttpClient.getProxyOkHttpClient(), page.link
+                        okHttpClient, page.link
                     )
                 } catch (e: Throwable) {
                     null

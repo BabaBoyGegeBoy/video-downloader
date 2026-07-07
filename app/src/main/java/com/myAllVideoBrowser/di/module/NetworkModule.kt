@@ -11,8 +11,6 @@ import com.myAllVideoBrowser.data.remote.service.VideoServiceLocal
 import com.myAllVideoBrowser.di.qualifier.ApplicationContext
 import com.myAllVideoBrowser.util.FileUtil
 import com.myAllVideoBrowser.util.ProxyRetryInterceptor
-import com.myAllVideoBrowser.util.proxy_utils.CustomProxyController
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import dagger.Module
 import dagger.Provides
 import okhttp3.OkHttpClient
@@ -56,15 +54,11 @@ class NetworkModule {
 
     @Provides
     @Singleton
-    fun provideVideoService(
-        proxyController: CustomProxyController,
-    ): VideoService = VideoServiceLocal(
-        proxyController
-    )
+    fun provideVideoService(): VideoService = VideoServiceLocal()
 
     @Provides
     @Singleton
-    fun provideFfmpegVideoService(httpClient: OkHttpProxyClient): VideoServiceSuperX =
+    fun provideFfmpegVideoService(httpClient: OkHttpClient): VideoServiceSuperX =
         VideoServiceSuperX(
             httpClient
         )

@@ -10,8 +10,8 @@ import com.myAllVideoBrowser.ui.main.home.browser.DownloadButtonStateCanDownload
 import com.myAllVideoBrowser.ui.main.home.browser.DownloadButtonStateCanNotDownload
 import com.myAllVideoBrowser.ui.main.home.browser.DownloadButtonStateLoading
 import com.myAllVideoBrowser.util.AppLogger
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import com.myAllVideoBrowser.util.scheduler.BaseSchedulers
+import okhttp3.OkHttpClient
 import io.reactivex.rxjava3.disposables.Disposable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,8 +23,8 @@ import javax.inject.Inject
 class GlobalVideoDetectionModel @Inject constructor(
     private val videoRepository: VideoRepository,
     private val baseSchedulers: BaseSchedulers,
-    okHttpProxyClient: OkHttpProxyClient,
-) : VideoDetectionTabViewModel(videoRepository, baseSchedulers, okHttpProxyClient), IVideoDetector {
+    okHttpClient: OkHttpClient,
+) : VideoDetectionTabViewModel(videoRepository, baseSchedulers, okHttpClient), IVideoDetector {
     
     @Volatile
     private var lastVerifiedLink: String = ""

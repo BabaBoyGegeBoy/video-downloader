@@ -13,8 +13,6 @@ import com.myAllVideoBrowser.data.local.room.entity.HistoryItem
 import com.myAllVideoBrowser.ui.main.history.HistoryViewModel
 import com.myAllVideoBrowser.ui.main.settings.SettingsViewModel
 import com.myAllVideoBrowser.util.FaviconUtils
-import com.myAllVideoBrowser.util.proxy_utils.CustomProxyController
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myAllVideoBrowser.R
 import com.myAllVideoBrowser.ui.main.home.browser.detectedVideos.IVideoDetector
@@ -28,8 +26,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.io.ByteArrayInputStream
 import androidx.core.net.toUri
-import com.myAllVideoBrowser.ui.main.home.browser.adblocker.AdBlockEngine
 import com.myAllVideoBrowser.util.AppLogger
+import okhttp3.OkHttpClient
 
 val injectJsInterceptor = """
         (function() {
@@ -69,11 +67,9 @@ class CustomWebViewClient(
     private val settingsModel: SettingsViewModel,
     private val videoDetectionModel: IVideoDetector,
     private val historyModel: HistoryViewModel,
-    private val okHttpProxyClient: OkHttpProxyClient,
+    private val okHttpClient: OkHttpClient,
     private val updateTabEvent: SingleLiveEvent<WebTab>,
-    private val pageTabProvider: PageTabProvider,
-    private val proxyController: CustomProxyController,
-    private val adBlockEngine: AdBlockEngine
+    private val pageTabProvider: PageTabProvider
 ) : WebViewClient() {
     var videoAlert: MaterialAlertDialogBuilder? = null
     private var lastSavedHistoryUrl: String = ""
@@ -101,7 +97,7 @@ class CustomWebViewClient(
             historyModel.viewModelScope.launch(historyModel.executorSingleHistory) {
                 val icon = try {
                     FaviconUtils.getEncodedFaviconFromUrl(
-                        okHttpProxyClient.getProxyOkHttpClient(), url
+                        okHttpClient, url
                     )
                 } catch (_: Throwable) {
                     null
@@ -123,18 +119,7 @@ class CustomWebViewClient(
         super.doUpdateVisitedHistory(view, url, isReload)
     }
 
-    override fun onReceivedHttpAuthRequest(
-        view: WebView?, handler: HttpAuthHandler?, host: String?, realm: String?
-    ) {
-        if (proxyController.getCurrentRunningProxy().host == host) {
-            val creds = proxyController.getProxyCredentials()
-
-            if (creds.first.isNotEmpty() || creds.second.isNotEmpty()) {
-                handler?.proceed(creds.first, creds.second)
-            }
-        }
-        super.onReceivedHttpAuthRequest(view, handler, host, realm)
-    }
+    
 
     override fun shouldInterceptRequest(
         view: WebView?, request: WebResourceRequest?
@@ -144,29 +129,6 @@ class CustomWebViewClient(
         }
 
         val url = request.url.toString()
-
-        val resourceType = when {
-            request.isForMainFrame -> "main_frame"
-            request.url.toString().contains(".js") -> "script"
-            request.url.toString().contains(".css") -> "stylesheet"
-            request.requestHeaders["X-Requested-With"] != null -> "xmlhttprequest"
-            request.requestHeaders["Accept"]?.contains("image") == true -> "image"
-            else -> "other"
-        }
-
-        if (settingsModel.isAdBlockOn.get()) {
-            val isAd = adBlockEngine.isAd(
-                url,
-                tabViewModel.getTabTextInput().get() ?: "",
-                resourceType
-            )
-
-            if (isAd) {
-                AppLogger.d("AdBlock (GET/Resource): Blocked $url")
-                return emptyResponse()
-            }
-        }
-
 
         val isCheckM3u8 = settingsModel.isCheckIfEveryRequestOnM3u8.get()
         val isCheckOnMp4 = settingsModel.getIsCheckEveryRequestOnMp4Video().get()
@@ -182,7 +144,7 @@ class CustomWebViewClient(
             }
 
             val contentType =
-                VideoUtils.getContentTypeByUrl(url, requestWithCookies?.headers, okHttpProxyClient)
+                VideoUtils.getContentTypeByUrl(url, requestWithCookies?.headers, okHttpClient)
             val isInterruptIntreceptedResources =
                 settingsModel.isInterruptIntreceptedResources.get()
             when {

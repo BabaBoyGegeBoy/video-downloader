@@ -14,11 +14,10 @@ import com.myAllVideoBrowser.util.FileUtil
 import com.myAllVideoBrowser.util.NotificationsHelper
 import com.myAllVideoBrowser.util.SharedPrefHelper
 import com.myAllVideoBrowser.util.downloaders.SystemDownloadManager
+import okhttp3.OkHttpClient
 import com.myAllVideoBrowser.util.downloaders.generic_downloader.GenericDownloader
 import com.myAllVideoBrowser.util.downloaders.generic_downloader.models.VideoTaskItem
 import com.myAllVideoBrowser.util.downloaders.generic_downloader.models.VideoTaskState
-import com.myAllVideoBrowser.util.proxy_utils.CustomProxyController
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import io.reactivex.rxjava3.disposables.Disposable
 import javax.inject.Inject
 
@@ -35,16 +34,13 @@ abstract class GenericDownloadWorkerWrapper(
     lateinit var notificationsHelper: NotificationsHelper
 
     @Inject
-    lateinit var proxyController: CustomProxyController
-
-    @Inject
-    lateinit var proxyOkHttpClient: OkHttpProxyClient
-
-    @Inject
     lateinit var sharedPrefHelper: SharedPrefHelper
 
     @Inject
     lateinit var systemDownloadManager: SystemDownloadManager
+
+    @Inject
+    lateinit var okHttpClient: OkHttpClient
 
     private var disposable: Disposable? = null
 

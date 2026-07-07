@@ -317,14 +317,13 @@ class CustomRegularDownloaderWorker(appContext: Context, workerParams: WorkerPar
 
         saveProgress(taskId, Progress(0, 0), VideoTaskState.PENDING)
         val threadCount = sharedPrefHelper.getRegularDownloaderThreadCount()
-        val okHttpClient = proxyOkHttpClient.getProxyOkHttpClient()
         val isForceStreamDownload = sharedPrefHelper.getIsForceStreamDownload()
         CustomFileDownloader(
             URL(url),
             File(outputFileName!!),
             threadCount,
             headers,
-            okHttpClient,
+            this.okHttpClient,
             createDownloadListener(taskItem, taskId),
             isForceStreamDownload
         ).download()

@@ -10,7 +10,6 @@ import com.google.gson.Gson
 import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.downloaders.generic_downloader.GenericDownloader
 import com.myAllVideoBrowser.util.downloaders.generic_downloader.GenericDownloader.DownloaderActions
-import com.myAllVideoBrowser.util.proxy_utils.proxy_manager.ProxyManager
 import java.io.File
 import java.io.IOException
 import java.io.Serializable
@@ -102,12 +101,6 @@ abstract class GenericDownloadWorker(appContext: Context, workerParams: WorkerPa
             }
 
             try {
-                if (!ProxyManager.isProxyRunning()) {
-                    AppLogger.d("Proxy process is not running.")
-                } else {
-                    AppLogger.d("Proxy process is running.")
-                }
-
                 val task = getTaskFromInput()
                 val action = inputData.getString(GenericDownloader.Constants.ACTION_KEY)
                 val isFileRemove =

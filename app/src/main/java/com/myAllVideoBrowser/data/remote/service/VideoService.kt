@@ -1,12 +1,10 @@
 package com.myAllVideoBrowser.data.remote.service
 
-import com.myAllVideoBrowser.data.local.model.Proxy
 import com.myAllVideoBrowser.data.local.model.VideoInfoWrapper
 import com.myAllVideoBrowser.data.local.room.entity.VideFormatEntityList
 import com.myAllVideoBrowser.data.local.room.entity.VideoFormatEntity
 import com.myAllVideoBrowser.data.local.room.entity.VideoInfo
 import com.myAllVideoBrowser.util.CookieUtils
-import com.myAllVideoBrowser.util.proxy_utils.CustomProxyController
 import com.myAllVideoBrowser.util.AppLogger
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
@@ -25,9 +23,7 @@ interface VideoService {
     ): VideoInfoWrapper?
 }
 
-open class VideoServiceLocal(
-    private val proxyController: CustomProxyController
-) : VideoService {
+open class VideoServiceLocal : VideoService {
     companion object {
         const val MP4_EXT = "mp4"
         private const val FACEBOOK_HOST = ".facebook."
@@ -68,11 +64,6 @@ open class VideoServiceLocal(
             if (name != COOKIE_HEADER) {
                 request.addOption("--add-header", "$name:${value}")
             }
-        }
-
-        val currentProxy = proxyController.getCurrentRunningProxy()
-        if (currentProxy != Proxy.noProxy()) {
-            attachProxyToRequest(request, currentProxy)
         }
 
         val tmpCookieFile = CookieUtils.addCookiesToRequest(originalUrl, request)
@@ -164,20 +155,6 @@ open class VideoServiceLocal(
             throw e
         } finally {
             tmpCookieFile.delete()
-        }
-    }
-
-    private fun attachProxyToRequest(request: YoutubeDLRequest, currentProxy: Proxy) {
-        val user = proxyController.getProxyCredentials().first
-        val password = proxyController.getProxyCredentials().second
-        if (user.isNotEmpty() && password.isNotEmpty()) {
-            request.addOption(
-                "--proxy", "http://${user}:${password}@${currentProxy.host}:${currentProxy.port}"
-            )
-        } else {
-            request.addOption(
-                "--proxy", "${currentProxy.host}:${currentProxy.port}"
-            )
         }
     }
 

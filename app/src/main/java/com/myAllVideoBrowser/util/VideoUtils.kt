@@ -1,8 +1,8 @@
 package com.myAllVideoBrowser.util
 
 import com.myAllVideoBrowser.ui.main.home.browser.ContentType
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import okhttp3.Headers
+import okhttp3.OkHttpClient
 import okhttp3.Request
 
 class VideoUtils {
@@ -10,7 +10,7 @@ class VideoUtils {
         fun getContentTypeByUrl(
             url: String,
             headers: Headers?,
-            okHttpProxyClient: OkHttpProxyClient
+            okHttpClient: OkHttpClient
         ): ContentType {
             val regex = Regex("\\.(js|css|m4s|ts)$|^blob:")
             if (regex.containsMatchIn(url)) {
@@ -24,7 +24,7 @@ class VideoUtils {
                     .get()
                     .build()
 
-                okHttpProxyClient.getProxyOkHttpClient().newCall(request).execute()
+                okHttpClient.newCall(request).execute()
                     .use { response ->
                         val contentTypeStr = response.header("Content-Type")
 

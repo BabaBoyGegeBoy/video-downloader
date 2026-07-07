@@ -52,15 +52,13 @@ import com.myAllVideoBrowser.ui.main.home.browser.TAB_INDEX_KEY
 import com.myAllVideoBrowser.ui.main.home.browser.TabManagerProvider
 import com.myAllVideoBrowser.ui.main.home.browser.WebPostBridge
 import com.myAllVideoBrowser.ui.main.home.browser.WorkerEventProvider
-import com.myAllVideoBrowser.ui.main.home.browser.adblocker.AdBlockEngine
 import com.myAllVideoBrowser.ui.main.home.browser.detectedVideos.DetectedVideosTabFragment
 import com.myAllVideoBrowser.ui.main.home.browser.detectedVideos.VideoDetectionTabViewModel
 
 import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.AppUtil
 import com.myAllVideoBrowser.util.FileNameCleaner
-import com.myAllVideoBrowser.util.proxy_utils.CustomProxyController
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
+import okhttp3.OkHttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -83,13 +81,7 @@ class WebTabFragment : BaseWebTabFragment() {
     lateinit var appUtil: AppUtil
 
     @Inject
-    lateinit var proxyController: CustomProxyController
-
-    @Inject
-    lateinit var okHttpProxyClient: OkHttpProxyClient
-
-    @Inject
-    lateinit var adBlockEngine: AdBlockEngine
+    lateinit var okHttpClient: OkHttpClient
 
     private lateinit var dataBinding: FragmentWebTabBinding
 
@@ -355,11 +347,9 @@ class WebTabFragment : BaseWebTabFragment() {
             mainActivity.settingsViewModel,
             videoDetectionTabViewModel,
             historyProvider.getHistoryVModel(),
-            okHttpProxyClient,
+            okHttpClient,
             tabManagerProvider.getUpdateTabEvent(),
-            pageTabProvider,
-            proxyController,
-            adBlockEngine
+            pageTabProvider
         )
 
         val chromeClient = CustomWebChromeClient(
@@ -791,17 +781,7 @@ class WebTabFragment : BaseWebTabFragment() {
         }
     }
 
-    private val shouldInterceptPostRequests = WebPostBridge { url, body ->
-        val isAdBlockOn = mainActivity.settingsViewModel.isAdBlockOn.get()
-        val isAd = isAdBlockOn &&
-                adBlockEngine.isAd(
-                    url,
-                    tabViewModel.getTabTextInput().get() ?: "",
-                    "xmlhttprequest"
-                )
-        if (isAd) {
-            AppLogger.d("AdBlock (POST): Blocked $url")
-        }
-        isAd
+    private val shouldInterceptPostRequests = WebPostBridge { _, _ ->
+        false
     }
 }

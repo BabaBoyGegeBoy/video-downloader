@@ -7,9 +7,9 @@ import com.myAllVideoBrowser.data.local.room.entity.VideoInfo
 import com.myAllVideoBrowser.util.AppLogger
 import com.myAllVideoBrowser.util.hls_parser.HlsPlaylistParser
 import com.myAllVideoBrowser.util.hls_parser.MpdPlaylistParser
-import com.myAllVideoBrowser.util.proxy_utils.OkHttpProxyClient
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 import java.time.Duration
@@ -20,7 +20,7 @@ import java.time.Duration
  * parsers instead of FFprobe for speed and reliability.
  */
 class VideoServiceSuperX(
-    private val client: OkHttpProxyClient
+    private val client: OkHttpClient
 ) : VideoService {
 
     override fun getVideoInfo(
@@ -52,7 +52,7 @@ class VideoServiceSuperX(
         AppLogger.d("PlaylistService: Fetching manifest from $urlString")
 
         // 1. Fetch the manifest content
-        client.getProxyOkHttpClient().newCall(url).execute().use { response ->
+        client.newCall(url).execute().use { response ->
             val content = response.body.string()
             AppLogger.d("Manifest body: $content")
 
@@ -328,7 +328,7 @@ class VideoServiceSuperX(
 
         val request =
             Request.Builder().url(firstVariantUrl).headers(headers.toHeaders()).build()
-        client.getProxyOkHttpClient().newCall(request).execute().use { response ->
+        client.newCall(request).execute().use { response ->
             val content = response.body.string()
 
             if (!response.isSuccessful || content.isEmpty()) {
