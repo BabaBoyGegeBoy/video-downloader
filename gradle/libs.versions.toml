@@ -180,7 +180,7 @@ glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "
 # Other Dependencies
 youtubedl = { module = "io.github.junkfood02.youtubedl-android:library", version.ref = "youtubedl" }
 youtubedl-ffmpeg = { module = "io.github.junkfood02.youtubedl-android:ffmpeg", version.ref = "youtubedl" }
-ffmpegKit = { module = "com.antonkarpenko:ffmpeg-kit-full-gpl", version.ref = "ffmpegKit" }
+ffmpegKit = { module = "com.antonkarpenko:ffmpeg-kit-min-gpl", version.ref = "ffmpegKit" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 timeago = { module = "com.github.marlonlom:timeago", version.ref = "timeago" }
 persistentCookieJar = { module = "com.github.franmontiel:PersistentCookieJar", version.ref = "persistentCookieJar" }

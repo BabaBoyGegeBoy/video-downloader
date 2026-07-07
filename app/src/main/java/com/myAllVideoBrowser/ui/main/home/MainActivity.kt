@@ -196,7 +196,6 @@ class MainActivity : BaseActivity() {
 
         override fun onPageSelected(postion: Int) {
             if (postion == 0) {
-                // Если без этого, дровер отркрываетс когда не надо
                 Handler(Looper.getMainLooper()).postDelayed({
                     mainViewModel.isBrowserCurrent.set(true)
                 }, 1000)

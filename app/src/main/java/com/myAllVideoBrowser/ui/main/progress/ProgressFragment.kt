@@ -99,18 +99,18 @@ class ProgressFragment : BaseFragment() {
         super.onDestroy()
     }
 
-    private val simsThreadsListener = Slider.OnChangeListener { _, value, fromUser ->
-        if (fromUser) {
-            val downloadsCount = value.toInt()
-            settingsViewModel.setSimulationsCount(downloadsCount)
-        }
-    }
-
     private fun handleDownloadVideoEvent() {
         mainViewModel.downloadVideoEvent.observe(viewLifecycleOwner) { videoInfo ->
             val currentOriginal = videoInfo.originalUrl
             mainViewModel.currentOriginal.set(currentOriginal)
             progressViewModel.downloadVideo(this.context, videoInfo)
+        }
+    }
+
+    private val simsThreadsListener = Slider.OnChangeListener { _, value, fromUser ->
+        if (fromUser) {
+            val downloadsCount = value.toInt()
+            settingsViewModel.setSimulationsCount(downloadsCount)
         }
     }
 
